@@ -201,12 +201,12 @@ class Mpd2(base.ThreadPoolText):
         """Attempt connection to mpd server."""
         if not self.connected:
             try:
-                self.client.ping()  # pylint: disable=E1101
+                self.client.ping()
             except(socket_error, ConnectionError):
                 try:
                     self.client.connect(self.host, self.port)
                     if self.password:
-                        self.client.password(self.password)  # pylint: disable=E1101
+                        self.client.password(self.password)
                     self.connected = True
                 except(socket_error, ConnectionError, CommandError):
                     self.connected = False
@@ -227,8 +227,8 @@ class Mpd2(base.ThreadPoolText):
     def update_status(self):
         """get updated info from mpd server and call format."""
         self.client.command_list_ok_begin()
-        self.client.status()  # pylint: disable=E1101
-        self.client.currentsong()  # pylint: disable=E1101
+        self.client.status()
+        self.client.currentsong()
         status, current_song = self.client.command_list_end()
 
         return self.formatter(status, current_song)
@@ -261,13 +261,13 @@ class Mpd2(base.ThreadPoolText):
 
     def toggle(self):
         """toggle play/pause."""
-        status = self.client.status()  # pylint: disable=E1101
+        status = self.client.status()
         play_status = status['state']
 
         if play_status == 'play':
-            self.client.pause()  # pylint: disable=E1101
+            self.client.pause()
         else:
-            self.client.play()  # pylint: disable=E1101
+            self.client.play()
 
     def formatter(self, status, current_song):
         """format song info."""
@@ -350,7 +350,7 @@ class Mpd2(base.ThreadPoolText):
         super().finalize()
 
         try:
-            self.client.close()  # pylint: disable=E1101
+            self.client.close()
             self.client.disconnect()
         except ConnectionError:
             pass
