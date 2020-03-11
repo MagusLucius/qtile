@@ -3,8 +3,9 @@ A widget for Music Player Daemon (MPD) based on python-mpd2.
 
 This widget exists since python-mpd library is no longer supported.
 """
-from libqtile.widget import base
+from . import base
 from libqtile.log_utils import logger
+from libqtile import utils, pangocffi
 
 from socket import error as socket_error
 from mpd import MPDClient, ConnectionError, CommandError
@@ -48,7 +49,7 @@ def option(char):
     return _convert
 
 
-# Changes to formatter will still use this dicitionary as a fallback
+# Changes to formatter will still use this dicitionary as a fallback.
 prepare_status = {
     'repeat': option('r'),
     'random': option('z'),
@@ -78,6 +79,7 @@ default_format = '{play_status} {artist}/{title} ' +\
 def default_cmd(): return None
 
 
+# default format: escape all tags.
 format_fns = {
     'all': lambda s: escape(s)
 }
@@ -85,6 +87,13 @@ format_fns = {
 
 class Mpd2(base.ThreadPoolText):
     r"""Mpd2 Object.
+
+    This Widget will display tags from the current song playing on an mpd
+    server in the qtile status bar, according to configurable options.
+
+    Widget requirements: mpd
+
+    .. mpd: https://pypi.org/project/python-mpd2/
 
     Parameters
     ==========
@@ -186,6 +195,10 @@ class Mpd2(base.ThreadPoolText):
         self.client = MPDClient()
         self.client.timeout = self.timeout
         self.client.idletimeout = self.idletimeout
+        self.mb_sandbox = [
+            'command',
+            'toggle'
+        ]
 
         # remap self.keys as mouse_buttons for new button_press functionality.
         # so we don't break existing configurations.
@@ -238,10 +251,9 @@ class Mpd2(base.ThreadPoolText):
         """handle click event on widget."""
         self.try_reconnect()
         m_name = self.mouse_buttons[button]
-        self_has_attr = hasattr(self, m_name)
         client_has_attr = hasattr(self.client, m_name)
 
-        if self.connected and self_has_attr:
+        if self.connected and m_name in self.mb_sandbox:
             self.__try_call(m_name)
         elif self.connected and client_has_attr:
             self.__try_call(m_name, self.client)
@@ -326,19 +338,12 @@ class Mpd2(base.ThreadPoolText):
             if fmt_fn in song_info and fmt_fn != 'all':
                 song_info[fmt_fn] = self.format_fns[fmt_fn](song_info[fmt_fn])
 
-        # fmt = self.status_format
         if not isinstance(fmt, str):
             fmt = str(fmt)
 
-        # not sure if the try/except is needed anymore...
-        try:
-            formatted = fmt.format(**song_info)
-            return formatted
-        except KeyError as e:
-            logger.exception(
-                "mpd client did not return status: {}".format(e.args[0])
-                )
-            return "ERROR"
+        formatted = fmt.format(**song_info)
+
+        return formatted
 
     def prepare_formatting(self, status):
         """old way of preparing status formatting."""
